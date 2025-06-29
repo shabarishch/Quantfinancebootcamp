@@ -36,13 +36,6 @@ def get_daily_log_returns(symbol, start_date, end_date):
         Displays a matplotlib plot of the stock's closing prices against
         the dates for the given range.
 
-    Example:
-        >>> from datetime import datetime
-        >>> # Assuming 'StockPriceData/AAPL.csv' exists.
-        >>> start = datetime.datetime(2023, 1, 1)
-        >>> end = datetime.datetime(2023, 12, 31)
-        >>> log_returns = get_daily_log_returns('AAPL', start, end)
-        >>> print(log_returns.head())
     """
     eastern = pytz.timezone('US/Eastern')
     stockprices = pd.read_csv(f'StockPriceData/{symbol}.csv')
@@ -76,18 +69,6 @@ def get_garch_params(log_rets):
         Prints the detailed summary of the GARCH model fitting results
         to standard output.
 
-    Example:
-        >>> # Generate some sample log returns
-        >>> np.random.seed(0)
-        >>> sample_returns = np.random.randn(1000) * 0.02
-        >>> # Get the GARCH parameters
-        >>> params = get_garch_params(sample_returns)
-        >>> print(params)
-        mu          -0.003952
-        omega        0.000185
-        alpha[1]     0.100000
-        beta[1]      0.880000
-        Name: params, dtype: float64
     """
     model = arch_model(100*log_rets, vol='GARCH', p=1, q=1)
     res = model.fit()
@@ -120,30 +101,6 @@ def simulate_from_garch_params(sigma_start, omega, alpha, beta, n_paths, n_steps
         - variances (np.ndarray): A 2D array of shape (n_paths, n_steps)
           containing the simulated conditional variances (σ²_t) for each path.
           
-    Example:
-        >>> # GARCH parameters
-        >>> initial_vol = 0.02
-        >>> omega_param = 0.00001
-        >>> alpha_param = 0.05
-        >>> beta_param = 0.94
-        >>>
-        >>> # Simulation settings
-        >>> paths_to_sim = 10
-        >>> steps_per_path = 252 # One trading year
-        >>>
-        >>> errors, variances = simulate_from_garch_params(
-        ...     sigma_start=initial_vol,
-        ...     omega=omega_param,
-        ...     alpha=alpha_param,
-        ...     beta=beta_param,
-        ...     n_paths=paths_to_sim,
-        ...     n_steps=steps_per_path
-        ... )
-        >>>
-        >>> print(f"Shape of errors array: {errors.shape}")
-        Shape of errors array: (10, 252)
-        >>> print(f"Shape of variances array: {variances.shape}")
-        Shape of variances array: (10, 252)
     """
     garch = GARCH(p=1, q=1)
     errors = np.zeros((n_paths, n_steps))
@@ -186,7 +143,7 @@ def stock_path_garch_sigma(S0, r, n_paths, t, garch_params):
     n_steps=math.ceil(t*252)
     
     simulated_sigma = simulate_from_garch_params(sigma_start=garch_params.omega, omega=garch_params.omega, alpha=garch_params.loc['alpha[1]'], beta=garch_params.loc['beta[1]'], n_paths=n_paths, n_steps=n_steps)
-    sigma_adjusted = simulated_sigma[0]/100
+    sigma_adjusted = simulated_sigma[1]/100
         
     noise = np.random.normal(0,1,(n_paths,n_steps))
   
