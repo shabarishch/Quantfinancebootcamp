@@ -186,4 +186,26 @@ def get_risk_return(symbols_list, weights, end_year):
     stock_covs = div_categories_stock_data.cov()
 
     print(f'Average yearly return = {(avgyearlyreturn-1)*100}%, Variance of daily returns = {np.dot(weights, stock_covs@weights)}')
+
+def get_risk_return_future(symbols_list, weights, start_year):
+    eastern = pytz.timezone('US/Eastern')
+    avgyearlyreturn = 0
+    for i in range(len(symbols_list)):
+        stockprices = pd.read_csv(f'StockPriceData/{symbols_list[i]}.csv')
+        stockprices['Date'] = pd.to_datetime(stockprices['Date'], utc=True)
+        stockprices['Date'] = stockprices['Date'].dt.tz_convert('US/Eastern')
+        stockprices = stockprices[stockprices['Date']>=eastern.localize(datetime.datetime(start_year-5, 5, 1, 0, 0, 0))]
+        stockprices['close_prev'] = stockprices['Close'].shift(252)
+        stockprices['growth'] = stockprices['Close']/stockprices['close_prev']
+        avgyearlyreturn+= (weights[i])*stockprices[(stockprices['Date']>=eastern.localize(datetime.datetime(start_year, 5, 1, 0, 0, 0)))&(stockprices['Date']<eastern.localize(datetime.datetime(start_year+1, 5, 1, 0, 0, 0)))]['growth'].mean()
+
+    start_date = datetime.datetime(start_year, 5, 1, 0, 0, 0)
+    end_date = datetime.datetime(start_year+1, 5, 1, 0, 0, 0)
+
+    # Get daily returns for our selected candidates and compute the covariances of daily returns
+    div_categories_stock_data = get_daily_rets(symbols_list, start_date, end_date)
+    div_categories_stock_data.drop(columns=['Date'], inplace=True)
+    stock_covs = div_categories_stock_data.cov()
+
+    print(f'Average yearly return = {(avgyearlyreturn-1)*100}%, Variance of daily returns = {np.dot(weights, stock_covs@weights)}')
     
